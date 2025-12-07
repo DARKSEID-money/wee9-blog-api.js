@@ -21,9 +21,9 @@ const postArticle = async (req, res, next) => {
     try {
         const { title, content, author } = value;
         const newArticle = new ArticleModel({
-            title,
-            content,
-            author,
+            title: req.body.title,
+            content: req.body.content,
+            author: req.user._id
         });
         await newArticle.save();
 
@@ -38,36 +38,22 @@ const postArticle = async (req, res, next) => {
 
 
 const getAllArticle = async (req, res, next) => {
-    ;
     try {
-        const limit = Number(req.query.limit) || 10;
-    const page = Number(req.query.page) || 1;
-    const skip = (page -1) * limit;
+        console.log(req.user)
+        const articles = await ArticleModel.find();
 
-    const searchQuery = req.query.q
         
-        let articles;
-        if (searchQuery) {
-            articles = await ArticleModel.find({ $text: { $search: searchQuery } })
-            .sort({createdAt: -1})
-            .limit(limit)
-            .skip(skip);
-        } else {
-            aritxles = await ArticleModel.find()
-            .sort({ createdAt: -1})
-            .limit(limit)
-            .skip(skip);
-        }
-       res.status(200).json({
-        message: searchQuery ? `Search results for "${searchQuery}"` : "Aritcles fetched",
-        data: articles
-       })
+
+        return res.status(200).json({
+            message: 'article fetched',
+            data: articles,
+        })
     } catch (error) {
         console.error(error);
         next(error);
     }
-}
-
+};
+    
 
 const getArticleById = async (req, res, next) => {
     try {
@@ -79,6 +65,10 @@ const getArticleById = async (req, res, next) => {
                 message: `Article with ID ${req.params.id} not found`
             })
         }
+
+        if (post.userId.toString() !== req.user.userId) {
+    return res.status(403).json({ message: "Not allowed" });
+}
 
         return res.status(200).json({
             message: 'article found',
@@ -111,12 +101,12 @@ const updateArticleById = async (req, res, next) => {
              {...value},
               {
             new: true,
-            runValidator: true,
+            runValidators: true,
         });
 
         if(!updatedArticle){
             return res.status(404).json({
-                message: "article not foung",
+                message: "article not found",
             });
         }
 
